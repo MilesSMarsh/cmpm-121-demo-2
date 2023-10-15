@@ -79,7 +79,7 @@ button:focus-visible {
   }
 }
 
-#canvas{
+#canvas {
   background-color: #facade;
   border-radius: 30px;
   filter: drop-shadow(30px 10px 4px #000000);
