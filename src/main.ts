@@ -49,8 +49,6 @@ canvas.addEventListener("mousemove", (e) => {
 canvas.addEventListener("mouseup", (e) => {
   cursor.active = false;
   console.log(e);
-  //   currentLine = null;
-
   changeDrawing();
 });
 
