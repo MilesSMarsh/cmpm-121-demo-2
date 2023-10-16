@@ -1,5 +1,7 @@
 import "./style.css";
 
+const zero: number = 0;
+
 const app: HTMLDivElement = document.querySelector("#app")!;
 
 const gameName = "Sticker Sketchpad";
@@ -12,61 +14,93 @@ app.append(header);
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d");
 
-//vvvvvvvvvvvv Code from https://developer.mozilla.org/en-US/docs/Web/API/Element/mousemove_event vvvvvvvvv
-// When true, moving the mouse draws on the canvas
-let isDrawing = false;
+function changeDrawing() {
+  canvas.dispatchEvent(new Event("drawing-changed"));
+}
 
-const xStart = 0;
-const yStart = 0;
-let x: number = xStart;
-let y: number = yStart;
+//some code taken from Adam Smith https://shoddy-paint.glitch.me/paint1.html
 
-// event.offsetX, event.offsetY gives the (x,y) offset from the edge of the canvas.
+const lines: { x: number; y: number }[][] = [];
+const redoLines: { x: number; y: number }[][] = [];
+let currentLine: { x: number; y: number }[];
 
-// Add the event listeners for mousedown, mousemove, and mouseup
+const cursor = { active: false, x: zero, y: zero };
+
 canvas.addEventListener("mousedown", (e) => {
-  x = e.offsetX;
-  y = e.offsetY;
-  isDrawing = true;
+  cursor.active = true;
+  cursor.x = e.offsetX;
+  cursor.y = e.offsetY;
+
+  currentLine = [];
+  lines.push(currentLine);
+  redoLines.splice(zero, redoLines.length);
+  currentLine.push({ x: cursor.x, y: cursor.y });
+
+  changeDrawing();
 });
 
 canvas.addEventListener("mousemove", (e) => {
-  if (isDrawing) {
-    drawLine(ctx!, x, y, e.offsetX, e.offsetY);
-    x = e.offsetX;
-    y = e.offsetY;
+  if (cursor.active) {
+    cursor.x = e.offsetX;
+    cursor.y = e.offsetY;
+    currentLine.push({ x: cursor.x, y: cursor.y });
+
+    changeDrawing();
   }
 });
 
-window.addEventListener("mouseup", (e) => {
-  if (isDrawing) {
-    drawLine(ctx!, x, y, e.offsetX, e.offsetY);
-    x = xStart;
-    y = yStart;
-    isDrawing = false;
-  }
+canvas.addEventListener("mouseup", (e) => {
+  cursor.active = false;
+  //   currentLine = null;
+
+  changeDrawing();
 });
 
-function drawLine(
-  context: CanvasRenderingContext2D,
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number
-) {
-  context.beginPath();
-  context.strokeStyle = "black";
-  context.lineWidth = 1;
-  context.moveTo(x1, y1);
-  context.lineTo(x2, y2);
-  context.stroke();
-  context.closePath();
+function redraw() {
+  ctx!.clearRect(zero, zero, canvas.width, canvas.height);
+  for (const line of lines) {
+    if (line.length > 1) {
+      ctx!.beginPath();
+      const { x, y } = line[zero];
+      ctx!.moveTo(x, y);
+      for (const { x, y } of line) {
+        ctx!.lineTo(x, y);
+      }
+      ctx!.stroke();
+    }
+  }
 }
-//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+// const clearButton = document.getElementById("clear");
+
+// clearButton?.addEventListener("click", function handleClick(event) {
+//   console.log(event);
+//   clearCanvas();
+// });
 
 const clearButton = document.getElementById("clear");
 
-clearButton?.addEventListener("click", function handleClick(event) {
-  console.log(event);
-  ctx!.clearRect(xStart, yStart, canvas.width, canvas.height);
+clearButton!.addEventListener("click", () => {
+  lines.splice(zero, lines.length);
+  changeDrawing();
 });
+
+const undoButton = document.getElementById("undo");
+
+undoButton!.addEventListener("click", () => {
+  if (lines.length > zero) {
+    redoLines.push(lines.pop()!);
+    changeDrawing();
+  }
+});
+
+const redoButton = document.getElementById("redo");
+
+redoButton!.addEventListener("click", () => {
+  if (redoLines.length > zero) {
+    lines.push(redoLines.pop()!);
+    changeDrawing();
+  }
+});
+
+canvas.addEventListener("drawing-changed", redraw);
