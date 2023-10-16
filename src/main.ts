@@ -5,6 +5,12 @@ const one = 1;
 
 const app: HTMLDivElement = document.querySelector("#app")!;
 
+const lines: { x: number; y: number }[][] = [];
+const redoLines: { x: number; y: number }[][] = [];
+let currentLine: { x: number; y: number }[];
+
+const cursor = { active: false, x: zero, y: zero };
+
 const gameName = "Sticker Sketchpad";
 document.title = gameName;
 
@@ -15,17 +21,7 @@ app.append(header);
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d");
 
-function changeDrawing() {
-  canvas.dispatchEvent(new Event("drawing-changed"));
-}
-
 //some code taken from Adam Smith https://shoddy-paint.glitch.me/paint1.html
-
-const lines: { x: number; y: number }[][] = [];
-const redoLines: { x: number; y: number }[][] = [];
-let currentLine: { x: number; y: number }[];
-
-const cursor = { active: false, x: zero, y: zero };
 
 canvas.addEventListener("mousedown", (e) => {
   cursor.active = true;
@@ -58,6 +54,8 @@ canvas.addEventListener("mouseup", (e) => {
   changeDrawing();
 });
 
+canvas.addEventListener("drawing-changed", redraw);
+
 function redraw() {
   ctx!.clearRect(zero, zero, canvas.width, canvas.height);
   for (const line of lines) {
@@ -73,12 +71,9 @@ function redraw() {
   }
 }
 
-// const clearButton = document.getElementById("clear");
-
-// clearButton?.addEventListener("click", function handleClick(event) {
-//   console.log(event);
-//   clearCanvas();
-// });
+function changeDrawing() {
+  canvas.dispatchEvent(new Event("drawing-changed"));
+}
 
 const clearButton = document.getElementById("clear");
 
@@ -104,5 +99,3 @@ redoButton!.addEventListener("click", () => {
     changeDrawing();
   }
 });
-
-canvas.addEventListener("drawing-changed", redraw);
