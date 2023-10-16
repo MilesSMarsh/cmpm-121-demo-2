@@ -1,6 +1,7 @@
 import "./style.css";
 
-const zero: number = 0;
+const zero = 0;
+const one = 1;
 
 const app: HTMLDivElement = document.querySelector("#app")!;
 
@@ -51,6 +52,7 @@ canvas.addEventListener("mousemove", (e) => {
 
 canvas.addEventListener("mouseup", (e) => {
   cursor.active = false;
+  console.log(e);
   //   currentLine = null;
 
   changeDrawing();
@@ -59,7 +61,7 @@ canvas.addEventListener("mouseup", (e) => {
 function redraw() {
   ctx!.clearRect(zero, zero, canvas.width, canvas.height);
   for (const line of lines) {
-    if (line.length > 1) {
+    if (line.length > one) {
       ctx!.beginPath();
       const { x, y } = line[zero];
       ctx!.moveTo(x, y);
