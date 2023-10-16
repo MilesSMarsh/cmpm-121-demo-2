@@ -10,13 +10,16 @@ header.innerHTML = gameName;
 app.append(header);
 
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
-const ctx = canvas!.getContext("2d");
+const ctx = canvas.getContext("2d");
 
 //vvvvvvvvvvvv Code from https://developer.mozilla.org/en-US/docs/Web/API/Element/mousemove_event vvvvvvvvv
 // When true, moving the mouse draws on the canvas
 let isDrawing = false;
-let x = 0;
-let y = 0;
+
+const xStart = 0;
+const yStart = 0;
+let x: number = xStart;
+let y: number = yStart;
 
 // event.offsetX, event.offsetY gives the (x,y) offset from the edge of the canvas.
 
@@ -38,8 +41,8 @@ canvas.addEventListener("mousemove", (e) => {
 window.addEventListener("mouseup", (e) => {
   if (isDrawing) {
     drawLine(ctx!, x, y, e.offsetX, e.offsetY);
-    x = 0;
-    y = 0;
+    x = xStart;
+    y = yStart;
     isDrawing = false;
   }
 });
@@ -65,5 +68,5 @@ const clearButton = document.getElementById("clear");
 
 clearButton?.addEventListener("click", function handleClick(event) {
   console.log(event);
-  ctx!.clearRect(0, 0, canvas.width, canvas.height);
+  ctx!.clearRect(xStart, yStart, canvas.width, canvas.height);
 });
