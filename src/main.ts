@@ -1,15 +1,16 @@
+//some code taken from Adam Smith https://shoddy-paint.glitch.me/paint1.html
+
 import "./style.css";
 
 const zero = 0;
-const one = 1;
+
+const startOfLine = 0;
+
+const emptyCommands = 0;
 
 const app: HTMLDivElement = document.querySelector("#app")!;
 
-const lines: { x: number; y: number }[][] = [];
-const redoLines: { x: number; y: number }[][] = [];
-let currentLine: { x: number; y: number }[];
-
-const cursor = { active: false, x: zero, y: zero };
+// const cursor = { active: false, x: zero, y: zero };
 
 const gameName = "Sticker Sketchpad";
 document.title = gameName;
@@ -21,79 +22,86 @@ app.append(header);
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d");
 
-//some code taken from Adam Smith https://shoddy-paint.glitch.me/paint1.html
+const commands: LineCommand[] = [];
+const redoCommands: LineCommand[] = [];
 
-canvas.addEventListener("mousedown", (e) => {
-  cursor.active = true;
-  cursor.x = e.offsetX;
-  cursor.y = e.offsetY;
+let currentLineCommand: LineCommand | null = null;
 
-  currentLine = [];
-  lines.push(currentLine);
-  redoLines.splice(zero, redoLines.length);
-  currentLine.push({ x: cursor.x, y: cursor.y });
-
-  changeDrawing();
+canvas.addEventListener("mouseup", (e) => {
+  currentLineCommand = null;
+  update("drawing-changed");
+  console.log(e);
 });
 
 canvas.addEventListener("mousemove", (e) => {
-  if (cursor.active) {
-    cursor.x = e.offsetX;
-    cursor.y = e.offsetY;
-    currentLine.push({ x: cursor.x, y: cursor.y });
-
-    changeDrawing();
+  const mouseButtonNumber = 1;
+  if (e.buttons == mouseButtonNumber) {
+    currentLineCommand!.points.push({ x: e.offsetX, y: e.offsetY });
+    update("drawing-changed");
   }
 });
 
-canvas.addEventListener("mouseup", (e) => {
-  cursor.active = false;
-  console.log(e);
-  changeDrawing();
+canvas.addEventListener("mousedown", (e) => {
+  currentLineCommand = new LineCommand(e.offsetX, e.offsetY);
+  commands.push(currentLineCommand);
+  redoCommands.splice(startOfLine, redoCommands.length);
+  update("drawing-changed");
 });
 
 canvas.addEventListener("drawing-changed", redraw);
 
-function redraw() {
-  ctx!.clearRect(zero, zero, canvas.width, canvas.height);
-  for (const line of lines) {
-    if (line.length > one) {
-      ctx!.beginPath();
-      const { x, y } = line[zero];
-      ctx!.moveTo(x, y);
-      for (const { x, y } of line) {
-        ctx!.lineTo(x, y);
-      }
-      ctx!.stroke();
-    }
-  }
-}
-
-function changeDrawing() {
-  canvas.dispatchEvent(new Event("drawing-changed"));
-}
-
 const clearButton = document.getElementById("clear");
 
 clearButton!.addEventListener("click", () => {
-  lines.splice(zero, lines.length);
-  changeDrawing();
+  commands.splice(startOfLine, commands.length);
+  update("drawing-changed");
 });
 
 const undoButton = document.getElementById("undo");
 
 undoButton!.addEventListener("click", () => {
-  if (lines.length > zero) {
-    redoLines.push(lines.pop()!);
-    changeDrawing();
+  if (commands.length > emptyCommands) {
+    redoCommands.push(commands.pop()!);
+    update("drawing-changed");
   }
 });
 
 const redoButton = document.getElementById("redo");
 
 redoButton!.addEventListener("click", () => {
-  if (redoLines.length > zero) {
-    lines.push(redoLines.pop()!);
-    changeDrawing();
+  if (redoCommands.length > emptyCommands) {
+    commands.push(redoCommands.pop()!);
+    update("drawing-changed");
   }
 });
+
+function redraw() {
+  ctx!.clearRect(zero, zero, canvas.width, canvas.height);
+
+  commands.forEach((cmd) => cmd.execute());
+}
+
+function update(eventName: string) {
+  canvas.dispatchEvent(new Event(eventName));
+}
+
+class LineCommand {
+  points: { x: number; y: number }[];
+  constructor(x: number, y: number) {
+    this.points = [{ x, y }];
+  }
+  execute() {
+    ctx!.strokeStyle = "black";
+    //ctx!.strokeWidth = 4;
+    ctx!.beginPath();
+    const { x, y } = this.points[zero];
+    ctx!.moveTo(x, y);
+    for (const { x, y } of this.points) {
+      ctx!.lineTo(x, y);
+    }
+    ctx!.stroke();
+  }
+  grow(x: number, y: number) {
+    this.points.push({ x, y });
+  }
+}
