@@ -14,7 +14,21 @@ const thinLine = 4;
 
 const thickLine = 8;
 
-// const cursor = { active: false, x: zero, y: zero };
+const mouseButtonNumber = 1;
+
+const yDisplacementThin = 4;
+
+const yDisplacementThick = 16;
+
+const xPosition = 8;
+
+let yPosition = yDisplacementThin;
+
+let cursorCommand: CursorCommand | null = null;
+
+let currentIcon = ".";
+
+let displayCursor = true;
 
 const gameName = "Sticker Sketchpad";
 document.title = gameName;
@@ -35,12 +49,14 @@ let currentLineThickness: number = thinLine;
 
 canvas.addEventListener("mouseup", (e) => {
   currentLineCommand = null;
+  displayCursor = true;
   update("drawing-changed");
   console.log(e);
 });
 
 canvas.addEventListener("mousemove", (e) => {
-  const mouseButtonNumber = 1;
+  cursorCommand = new CursorCommand(e.offsetX, e.offsetY, currentIcon);
+  update("cursor-changed");
   if (e.buttons == mouseButtonNumber) {
     currentLineCommand!.points.push({ x: e.offsetX, y: e.offsetY });
     update("drawing-changed");
@@ -53,6 +69,7 @@ canvas.addEventListener("mousedown", (e) => {
     e.offsetY,
     currentLineThickness
   );
+  displayCursor = false;
   commands.push(currentLineCommand);
   redoCommands.splice(startOfLine, redoCommands.length);
   update("drawing-changed");
@@ -86,22 +103,18 @@ redoButton!.addEventListener("click", () => {
 });
 
 const thinButton = document.getElementById("thin");
-
 thinButton!.addEventListener("click", () => {
+  currentIcon = ".";
+  yPosition = yDisplacementThin;
   currentLineThickness = thinLine;
 });
 
 const thickButton = document.getElementById("thick");
-
 thickButton!.addEventListener("click", () => {
+  currentIcon = "*";
+  yPosition = yDisplacementThick;
   currentLineThickness = thickLine;
 });
-
-function redraw() {
-  ctx!.clearRect(zero, zero, canvas.width, canvas.height);
-
-  commands.forEach((cmd) => cmd.execute());
-}
 
 function update(eventName: string) {
   canvas.dispatchEvent(new Event(eventName));
@@ -125,7 +138,47 @@ class LineCommand {
     }
     ctx!.stroke();
   }
-  grow(x: number, y: number) {
-    this.points.push({ x, y });
+}
+
+canvas.addEventListener("mouseout", (e) => {
+  displayCursor = false;
+  cursorCommand = null;
+  update("cursor-changed");
+  console.log(e);
+});
+
+canvas.addEventListener("mouseenter", (e) => {
+  displayCursor = true;
+  cursorCommand = new CursorCommand(e.offsetX, e.offsetY, currentIcon);
+  update("cursor-changed");
+});
+
+class CursorCommand {
+  x: number;
+  y: number;
+  icon: string;
+  constructor(x: number, y: number, icon: string) {
+    this.x = x;
+    this.y = y;
+    this.icon = icon;
+  }
+  execute() {
+    ctx!.font = "32px monospace";
+    if (displayCursor) {
+      ctx!.fillText(this.icon, this.x - xPosition, this.y + yPosition);
+    }
   }
 }
+
+function redraw() {
+  ctx!.clearRect(zero, zero, canvas.width, canvas.height);
+  commands.forEach((cmd) => cmd.execute());
+
+  if (cursorCommand) {
+    cursorCommand.execute();
+  }
+}
+
+canvas.addEventListener("cursor-changed", redraw);
+
+canvas.style.cursor = "none";
