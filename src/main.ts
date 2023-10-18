@@ -10,6 +10,10 @@ const emptyCommands = 0;
 
 const app: HTMLDivElement = document.querySelector("#app")!;
 
+const thinLine = 4;
+
+const thickLine = 8;
+
 // const cursor = { active: false, x: zero, y: zero };
 
 const gameName = "Sticker Sketchpad";
@@ -27,6 +31,8 @@ const redoCommands: LineCommand[] = [];
 
 let currentLineCommand: LineCommand | null = null;
 
+let currentLineThickness: number = thinLine;
+
 canvas.addEventListener("mouseup", (e) => {
   currentLineCommand = null;
   update("drawing-changed");
@@ -42,7 +48,11 @@ canvas.addEventListener("mousemove", (e) => {
 });
 
 canvas.addEventListener("mousedown", (e) => {
-  currentLineCommand = new LineCommand(e.offsetX, e.offsetY);
+  currentLineCommand = new LineCommand(
+    e.offsetX,
+    e.offsetY,
+    currentLineThickness
+  );
   commands.push(currentLineCommand);
   redoCommands.splice(startOfLine, redoCommands.length);
   update("drawing-changed");
@@ -75,6 +85,18 @@ redoButton!.addEventListener("click", () => {
   }
 });
 
+const thinButton = document.getElementById("thin");
+
+thinButton!.addEventListener("click", () => {
+  currentLineThickness = thinLine;
+});
+
+const thickButton = document.getElementById("thick");
+
+thickButton!.addEventListener("click", () => {
+  currentLineThickness = thickLine;
+});
+
 function redraw() {
   ctx!.clearRect(zero, zero, canvas.width, canvas.height);
 
@@ -87,12 +109,14 @@ function update(eventName: string) {
 
 class LineCommand {
   points: { x: number; y: number }[];
-  constructor(x: number, y: number) {
+  thickness: number;
+  constructor(x: number, y: number, thicky: number) {
     this.points = [{ x, y }];
+    this.thickness = thicky;
   }
   execute() {
     ctx!.strokeStyle = "black";
-    //ctx!.strokeWidth = 4;
+    ctx!.lineWidth = this.thickness;
     ctx!.beginPath();
     const { x, y } = this.points[zero];
     ctx!.moveTo(x, y);
