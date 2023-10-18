@@ -8,6 +8,8 @@ const startOfLine = 0;
 
 const emptyCommands = 0;
 
+const firstPoint = 0;
+
 const app: HTMLDivElement = document.querySelector("#app")!;
 
 const thinLine = 4;
@@ -29,6 +31,8 @@ let cursorCommand: CursorCommand | null = null;
 let currentIcon = ".";
 
 let displayCursor = true;
+
+let stamping = false;
 
 const gameName = "Sticker Sketchpad";
 document.title = gameName;
@@ -67,7 +71,9 @@ canvas.addEventListener("mousedown", (e) => {
   currentLineCommand = new LineCommand(
     e.offsetX,
     e.offsetY,
-    currentLineThickness
+    currentLineThickness,
+    stamping,
+    currentIcon
   );
   displayCursor = false;
   commands.push(currentLineCommand);
@@ -107,6 +113,7 @@ thinButton!.addEventListener("click", () => {
   currentIcon = ".";
   yPosition = yDisplacementThin;
   currentLineThickness = thinLine;
+  stamping = false;
 });
 
 const thickButton = document.getElementById("thick");
@@ -114,6 +121,28 @@ thickButton!.addEventListener("click", () => {
   currentIcon = "*";
   yPosition = yDisplacementThick;
   currentLineThickness = thickLine;
+  stamping = false;
+});
+
+const smileButton = document.getElementById("smile");
+smileButton!.addEventListener("click", () => {
+  currentIcon = "🙂";
+  yPosition = yDisplacementThick;
+  stamping = true;
+});
+
+const surprisedButton = document.getElementById("surprised");
+surprisedButton!.addEventListener("click", () => {
+  currentIcon = "😮";
+  yPosition = yDisplacementThick;
+  stamping = true;
+});
+
+const cryButton = document.getElementById("cry");
+cryButton!.addEventListener("click", () => {
+  currentIcon = "🥲";
+  yPosition = yDisplacementThick;
+  stamping = true;
 });
 
 function update(eventName: string) {
@@ -123,20 +152,38 @@ function update(eventName: string) {
 class LineCommand {
   points: { x: number; y: number }[];
   thickness: number;
-  constructor(x: number, y: number, thicky: number) {
+  stamp: boolean;
+  icon: string;
+  constructor(
+    x: number,
+    y: number,
+    thicky: number,
+    stamp: boolean,
+    icon: string
+  ) {
     this.points = [{ x, y }];
     this.thickness = thicky;
+    this.stamp = stamp;
+    this.icon = icon;
   }
   execute() {
-    ctx!.strokeStyle = "black";
-    ctx!.lineWidth = this.thickness;
-    ctx!.beginPath();
-    const { x, y } = this.points[zero];
-    ctx!.moveTo(x, y);
-    for (const { x, y } of this.points) {
-      ctx!.lineTo(x, y);
+    if (this.stamp) {
+      ctx!.fillText(
+        this.icon,
+        this.points[firstPoint].x - xPosition,
+        this.points[firstPoint].y + yPosition
+      );
+    } else {
+      ctx!.strokeStyle = "black";
+      ctx!.lineWidth = this.thickness;
+      ctx!.beginPath();
+      const { x, y } = this.points[zero];
+      ctx!.moveTo(x, y);
+      for (const { x, y } of this.points) {
+        ctx!.lineTo(x, y);
+      }
+      ctx!.stroke();
     }
-    ctx!.stroke();
   }
 }
 
