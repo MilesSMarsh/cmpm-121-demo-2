@@ -24,6 +24,8 @@ const yDisplacementThick = 16;
 
 const xPosition = 8;
 
+const baseFontSize = 32;
+
 let yPosition = yDisplacementThin;
 
 let cursorCommand: CursorCommand | null = null;
@@ -33,6 +35,8 @@ let currentIcon = ".";
 let displayCursor = true;
 
 let stamping = false;
+
+const canvasScale = 4;
 
 const gameName = "Sticker Sketchpad";
 document.title = gameName;
@@ -73,7 +77,8 @@ canvas.addEventListener("mousedown", (e) => {
     e.offsetY,
     currentLineThickness,
     stamping,
-    currentIcon
+    currentIcon,
+    baseFontSize
   );
   displayCursor = false;
   commands.push(currentLineCommand);
@@ -145,6 +150,35 @@ cryButton!.addEventListener("click", () => {
   stamping = true;
 });
 
+const customButton = document.getElementById("custom");
+customButton!.addEventListener("click", () => {
+  let lastIcon = "🧽";
+  let text = prompt("Custom sticker text", `${lastIcon}`);
+  if (text == null || text == "") {
+    text = "🧽";
+  }
+  lastIcon = text;
+  customButton!.innerHTML = `Custom: ${text}`;
+  currentIcon = text!;
+  yPosition = yDisplacementThick;
+  stamping = true;
+});
+
+const exportButton = document.getElementById("export");
+exportButton!.addEventListener("click", () => {
+  const canvasToExport = document.createElement("canvas");
+  canvasToExport.width = 1024;
+  canvasToExport.height = 1024;
+  const exportContext = canvasToExport.getContext("2d");
+  commands.forEach((cmd) => cmd.scale(canvasScale));
+  commands.forEach((cmd) => cmd.execute(exportContext));
+
+  const anchor = document.createElement("a");
+  anchor.href = canvasToExport.toDataURL("image/png");
+  anchor.download = "sketchpad.png";
+  anchor.click();
+});
+
 function update(eventName: string) {
   canvas.dispatchEvent(new Event(eventName));
 }
@@ -154,20 +188,24 @@ class LineCommand {
   thickness: number;
   stamp: boolean;
   icon: string;
+  fontSize: number;
   constructor(
     x: number,
     y: number,
     thicky: number,
     stamp: boolean,
-    icon: string
+    icon: string,
+    fontSize: number
   ) {
     this.points = [{ x, y }];
     this.thickness = thicky;
     this.stamp = stamp;
     this.icon = icon;
+    this.fontSize = fontSize;
   }
-  execute() {
+  execute(ctx: CanvasRenderingContext2D | null) {
     if (this.stamp) {
+      ctx!.font = `${this.fontSize}px monospace`;
       ctx!.fillText(
         this.icon,
         this.points[firstPoint].x - xPosition,
@@ -184,6 +222,15 @@ class LineCommand {
       }
       ctx!.stroke();
     }
+  }
+
+  scale(scalar: number) {
+    this.points.forEach((element) => {
+      element.x *= scalar;
+      element.y *= scalar;
+    });
+    this.fontSize *= scalar;
+    this.thickness *= scalar;
   }
 }
 
@@ -219,7 +266,7 @@ class CursorCommand {
 
 function redraw() {
   ctx!.clearRect(zero, zero, canvas.width, canvas.height);
-  commands.forEach((cmd) => cmd.execute());
+  commands.forEach((cmd) => cmd.execute(ctx));
 
   if (cursorCommand) {
     cursorCommand.execute();
