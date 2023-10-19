@@ -155,7 +155,7 @@ customButton!.addEventListener("click", () => {
   let lastIcon = "🧽";
   let text = prompt("Custom sticker text", `${lastIcon}`);
   if (text == null || text == "") {
-    text = "🧽";
+    text = lastIcon;
   }
   lastIcon = text;
   customButton!.innerHTML = `Custom: ${text}`;
