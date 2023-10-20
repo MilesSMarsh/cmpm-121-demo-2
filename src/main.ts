@@ -177,16 +177,6 @@ const stampList: { buttonName: HTMLElement; icon: string }[] = [
   { buttonName: cryButton!, icon: "🥲" },
   { buttonName: surprisedButton!, icon: "😮" },
 ];
-function addButtons(stampList: { buttonName: HTMLElement; icon: string }[]) {
-  stampList.forEach((element) => {
-    element.buttonName.addEventListener("click", () => {
-      currentIcon = element.icon;
-      yPosition = yDisplacementThick;
-      stamping = true;
-      stampList.pop();
-    });
-  });
-}
 addButtons(stampList);
 
 const customButton = document.getElementById("custom");
@@ -331,4 +321,15 @@ function redraw() {
 
 function update(eventName: string) {
   canvas.dispatchEvent(new Event(eventName));
+}
+
+function addButtons(stampList: { buttonName: HTMLElement; icon: string }[]) {
+  stampList.forEach((element) => {
+    element.buttonName.addEventListener("click", () => {
+      currentIcon = element.icon;
+      yPosition = yDisplacementThick;
+      stamping = true;
+      stampList.pop();
+    });
+  });
 }
