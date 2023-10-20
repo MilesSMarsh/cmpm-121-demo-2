@@ -87,7 +87,6 @@ canvas.addEventListener("mousemove", (e) => {
   if (e.buttons == mouseButtonNumber) {
     currentLineCommand!.points.push({ x: e.offsetX, y: e.offsetY });
     update("drawing-changed");
-    console.log(currentColor);
   }
 });
 
