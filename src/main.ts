@@ -130,25 +130,24 @@ thickButton!.addEventListener("click", () => {
 });
 
 const smileButton = document.getElementById("smile");
-smileButton!.addEventListener("click", () => {
-  currentIcon = "🙂";
-  yPosition = yDisplacementThick;
-  stamping = true;
-});
-
-const surprisedButton = document.getElementById("surprised");
-surprisedButton!.addEventListener("click", () => {
-  currentIcon = "😮";
-  yPosition = yDisplacementThick;
-  stamping = true;
-});
-
 const cryButton = document.getElementById("cry");
-cryButton!.addEventListener("click", () => {
-  currentIcon = "🥲";
-  yPosition = yDisplacementThick;
-  stamping = true;
-});
+const surprisedButton = document.getElementById("surprised");
+const stampList: { buttonName: HTMLElement; icon: string }[] = [
+  { buttonName: smileButton!, icon: "🙂" },
+  { buttonName: cryButton!, icon: "🥲" },
+  { buttonName: surprisedButton!, icon: "😮" },
+];
+function addButtons(stampList: { buttonName: HTMLElement; icon: string }[]) {
+  stampList.forEach((element) => {
+    element.buttonName.addEventListener("click", () => {
+      currentIcon = element.icon;
+      yPosition = yDisplacementThick;
+      stamping = true;
+      stampList.pop();
+    });
+  });
+}
+addButtons(stampList);
 
 const customButton = document.getElementById("custom");
 customButton!.addEventListener("click", () => {
@@ -158,10 +157,15 @@ customButton!.addEventListener("click", () => {
     text = lastIcon;
   }
   lastIcon = text;
-  customButton!.innerHTML = `Custom: ${text}`;
   currentIcon = text!;
   yPosition = yDisplacementThick;
   stamping = true;
+  const customStamp = document.createElement("button") as HTMLElement;
+  const buttons: HTMLDivElement = document.querySelector("#buttons")!;
+  customStamp.innerHTML = text;
+  buttons.append(customStamp);
+  stampList.push({ buttonName: customStamp, icon: text });
+  addButtons(stampList);
 });
 
 const exportButton = document.getElementById("export");
