@@ -2,29 +2,45 @@
 
 import "./style.css";
 
-const zero = 0;
-
-const startOfLine = 0;
+//const variables
 
 const emptyCommands = 0;
 
 const firstPoint = 0;
 
-const app: HTMLDivElement = document.querySelector("#app")!;
+const startOfLine = 0;
 
-const thinLine = 4;
+const zero = 0;
 
-const thickLine = 8;
+const inverseCanvasScale = 0.25;
 
 const mouseButtonNumber = 1;
 
+const canvasScale = 4;
+
+const thinLine = 4;
+
 const yDisplacementThin = 4;
 
-const yDisplacementThick = 16;
+const thickLine = 8;
 
 const xPosition = 8;
 
+const hex = 16;
+
+const yDisplacementThick = 16;
+
 const baseFontSize = 32;
+
+const commands: LineCommand[] = [];
+
+const redoCommands: LineCommand[] = [];
+
+//global variables
+
+let currentLineCommand: LineCommand | null = null;
+
+let currentLineThickness: number = thinLine;
 
 let yPosition = yDisplacementThin;
 
@@ -36,7 +52,11 @@ let displayCursor = true;
 
 let stamping = false;
 
-const canvasScale = 4;
+let currentColor = "000000";
+
+//page configuration
+
+const app: HTMLDivElement = document.querySelector("#app")!;
 
 const gameName = "Sticker Sketchpad";
 document.title = gameName;
@@ -47,19 +67,18 @@ app.append(header);
 
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d");
+canvas.style.cursor = "none";
 
-const commands: LineCommand[] = [];
-const redoCommands: LineCommand[] = [];
+//-------------------------------------------
+//            event listeners
+//-------------------------------------------
 
-let currentLineCommand: LineCommand | null = null;
+//mouse events
 
-let currentLineThickness: number = thinLine;
-
-canvas.addEventListener("mouseup", (e) => {
+canvas.addEventListener("mouseup", () => {
   currentLineCommand = null;
   displayCursor = true;
   update("drawing-changed");
-  console.log(e);
 });
 
 canvas.addEventListener("mousemove", (e) => {
@@ -68,6 +87,7 @@ canvas.addEventListener("mousemove", (e) => {
   if (e.buttons == mouseButtonNumber) {
     currentLineCommand!.points.push({ x: e.offsetX, y: e.offsetY });
     update("drawing-changed");
+    console.log(currentColor);
   }
 });
 
@@ -78,7 +98,8 @@ canvas.addEventListener("mousedown", (e) => {
     currentLineThickness,
     stamping,
     currentIcon,
-    baseFontSize
+    baseFontSize,
+    currentColor
   );
   displayCursor = false;
   commands.push(currentLineCommand);
@@ -86,17 +107,36 @@ canvas.addEventListener("mousedown", (e) => {
   update("drawing-changed");
 });
 
+canvas.addEventListener("mouseout", () => {
+  displayCursor = false;
+  cursorCommand = null;
+  update("cursor-changed");
+});
+
+canvas.addEventListener("mouseenter", (e) => {
+  displayCursor = true;
+  cursorCommand = new CursorCommand(e.offsetX, e.offsetY, currentIcon);
+  update("cursor-changed");
+});
+
+//custom events
+
 canvas.addEventListener("drawing-changed", redraw);
 
-const clearButton = document.getElementById("clear");
+canvas.addEventListener("cursor-changed", redraw);
 
+//-------------------------------------------
+//                buttons
+//-------------------------------------------
+
+const clearButton = document.getElementById("clear");
 clearButton!.addEventListener("click", () => {
   commands.splice(startOfLine, commands.length);
+  redoCommands.splice(startOfLine, redoCommands.length);
   update("drawing-changed");
 });
 
 const undoButton = document.getElementById("undo");
-
 undoButton!.addEventListener("click", () => {
   if (commands.length > emptyCommands) {
     redoCommands.push(commands.pop()!);
@@ -105,7 +145,6 @@ undoButton!.addEventListener("click", () => {
 });
 
 const redoButton = document.getElementById("redo");
-
 redoButton!.addEventListener("click", () => {
   if (redoCommands.length > emptyCommands) {
     commands.push(redoCommands.pop()!);
@@ -128,6 +167,8 @@ thickButton!.addEventListener("click", () => {
   currentLineThickness = thickLine;
   stamping = false;
 });
+
+//Stamp buttons and custom button
 
 const smileButton = document.getElementById("smile");
 const cryButton = document.getElementById("cry");
@@ -168,6 +209,8 @@ customButton!.addEventListener("click", () => {
   addButtons(stampList);
 });
 
+//export button
+
 const exportButton = document.getElementById("export");
 exportButton!.addEventListener("click", () => {
   const canvasToExport = document.createElement("canvas");
@@ -176,6 +219,7 @@ exportButton!.addEventListener("click", () => {
   const exportContext = canvasToExport.getContext("2d");
   commands.forEach((cmd) => cmd.scale(canvasScale));
   commands.forEach((cmd) => cmd.execute(exportContext));
+  commands.forEach((cmd) => cmd.scale(inverseCanvasScale));
 
   const anchor = document.createElement("a");
   anchor.href = canvasToExport.toDataURL("image/png");
@@ -183,9 +227,24 @@ exportButton!.addEventListener("click", () => {
   anchor.click();
 });
 
-function update(eventName: string) {
-  canvas.dispatchEvent(new Event(eventName));
-}
+//color slider configuration and functionality
+
+const slider = document.getElementById("slider") as HTMLInputElement;
+slider.style.accentColor = currentColor;
+
+slider.addEventListener("input", () => {
+  const color = Math.round(Number(slider.value)).toString(hex);
+  if (color == "0") {
+    currentColor = "000000";
+  } else {
+    currentColor = color;
+  }
+  slider.style.accentColor = `#${currentColor}`;
+});
+
+//-------------------------------------------
+//                classes
+//-------------------------------------------
 
 class LineCommand {
   points: { x: number; y: number }[];
@@ -193,19 +252,22 @@ class LineCommand {
   stamp: boolean;
   icon: string;
   fontSize: number;
+  color: string;
   constructor(
     x: number,
     y: number,
     thicky: number,
     stamp: boolean,
     icon: string,
-    fontSize: number
+    fontSize: number,
+    color: string
   ) {
     this.points = [{ x, y }];
     this.thickness = thicky;
     this.stamp = stamp;
     this.icon = icon;
     this.fontSize = fontSize;
+    this.color = color;
   }
   execute(ctx: CanvasRenderingContext2D | null) {
     if (this.stamp) {
@@ -216,7 +278,7 @@ class LineCommand {
         this.points[firstPoint].y + yPosition
       );
     } else {
-      ctx!.strokeStyle = "black";
+      ctx!.strokeStyle = `#${this.color}`;
       ctx!.lineWidth = this.thickness;
       ctx!.beginPath();
       const { x, y } = this.points[zero];
@@ -238,19 +300,6 @@ class LineCommand {
   }
 }
 
-canvas.addEventListener("mouseout", (e) => {
-  displayCursor = false;
-  cursorCommand = null;
-  update("cursor-changed");
-  console.log(e);
-});
-
-canvas.addEventListener("mouseenter", (e) => {
-  displayCursor = true;
-  cursorCommand = new CursorCommand(e.offsetX, e.offsetY, currentIcon);
-  update("cursor-changed");
-});
-
 class CursorCommand {
   x: number;
   y: number;
@@ -268,6 +317,10 @@ class CursorCommand {
   }
 }
 
+//-------------------------------------------
+//             gloabal functions
+//-------------------------------------------
+
 function redraw() {
   ctx!.clearRect(zero, zero, canvas.width, canvas.height);
   commands.forEach((cmd) => cmd.execute(ctx));
@@ -277,6 +330,6 @@ function redraw() {
   }
 }
 
-canvas.addEventListener("cursor-changed", redraw);
-
-canvas.style.cursor = "none";
+function update(eventName: string) {
+  canvas.dispatchEvent(new Event(eventName));
+}
